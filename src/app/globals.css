@@ -1,25 +1,134 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-body {
-  background: #f5f7f6;
-  color: #1f2937;
+:root {
+  --bg-creme: #fbfaf8;
+  --text-main: #1a1a1a;
+  --text-muted: #565656;
+  --moss-green: #2d4031;
+  --moss-light: #3e5643;
+  --accent-gold: #a47e50;
+  --border-soft: #e5e1da;
 }
 
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    /* Prevent horizontal scroll globally */
+    overflow-x: hidden; 
+    width: 100%;
+  }
+
+  body {
+    background-color: var(--bg-creme);
+    color: var(--text-main);
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-inter), ui-sans-serif, system-ui;
+    /* Ensure body doesn't expand past viewport width */
+    max-width: 100vw;
+    overflow-x: hidden;
+    /* Works with your layout.tsx fix to push footer down */
+    min-height: 100vh; 
+  }
+
+  h1, h2, h3, h4, .serif-heading {
+    font-family: var(--font-playfair), ui-serif, Georgia;
+    letter-spacing: -0.01em;
+    /* Reset default margins that create gaps */
+    margin: 0; 
+  }
+
+  /* Universal reset to prevent width calculation errors */
+  * {
+    box-sizing: border-box;
+  }
+}
+
+/* --- Layout --- */
 .container {
-  max-width: 1200px;
-  margin: auto;
-  padding: 0 20px;
+  width: 100%;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
 }
 
+@media (min-width: 768px) {
+  .container {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+}
+
+.section-padding {
+  padding-top: 5rem;
+  padding-bottom: 5rem;
+}
+
+/* --- Premium Components --- */
+
+/* Primary Button */
 .btn-primary {
-  background: #16a34a;
-  color: white;
-  padding: 10px 16px;
-  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 2rem;
+  background-color: var(--moss-green);
+  color: #ffffff;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-radius: 9999px;
+  transition: all 0.5s ease-in-out;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
 }
 
+.btn-primary:hover {
+  background-color: var(--moss-light);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Secondary Button */
 .btn-secondary {
-  border: 1px solid #ddd;
-  padding: 10px 16px;
-  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 2rem;
+  background-color: transparent;
+  border: 1px solid var(--moss-green);
+  color: var(--moss-green);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-radius: 9999px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn-secondary:hover {
+  background-color: var(--moss-green);
+  color: #ffffff;
+}
+
+/* Input Fields */
+.input-field {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-soft);
+  padding: 0.75rem 0;
+  transition: border-color 0.3s ease;
+  outline: none;
+}
+
+.input-field:focus {
+  border-bottom-color: var(--moss-green);
 }

@@ -1,15 +1,17 @@
+import type { ReactNode } from "react";
+
 type Props = {
   title: string;
-  children: React.ReactNode;
+  children: ReactNode;
+  id?: string;
 };
 
-export default function Section({ title, children }: Props) {
+export default function Section({ title, children, id }: Props) {
   return (
-    <section className="py-16">
-      <div className="container">
-        <div className="flex justify-between mb-6">
-          <h2 className="text-2xl font-bold">{title}</h2>
-          <button className="btn-secondary">View All →</button>
+    <section id={id} className="bg-[#f5f0e8] px-4 py-10 md:py-16">
+      <div className="container mx-auto">
+        <div className="mb-8 flex items-end justify-between gap-6">
+          <h2 className="text-3xl font-semibold text-[#3f342c] md:text-4xl">{title}</h2>
         </div>
         {children}
       </div>
