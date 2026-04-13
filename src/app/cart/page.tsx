@@ -2,55 +2,46 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { cartApi, normalizeList } from "@/lib/api";
-
-type CartItem = {
-  quantity?: number;
-  plant?: {
-    id?: string | number;
-    _id?: string | number;
-    name: string;
-    price: string | number;
-    image?: string;
-  };
-  id?: string | number;
-  _id?: string | number;
-  name?: string;
-  price?: string | number;
-  image?: string;
-  plant_id?: string | number;
-};
-
-const COLORS = {
-  bg: "#fdfaf5",
-  card: "#ffffff",
-  border: "#ddd2bf",
-  textMain: "#2D241E",
-  textDim: "#8e8175",
-  brandGreen: "#008a45",
-  accent: "#f8f3eb",
-  error: "#9f5f5f",
-  softBeige: "#f4ede4"
-};
+import { cartApi, normalizeList, plantApi } from "@/lib/api";
 
 export default function CartPage() {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isLoggedOut, setIsLoggedOut] = useState(false);
 
   const loadCart = async () => {
-    setLoading(true);
     try {
-      const data = await cartApi.getCart();
-      setItems(normalizeList(data));
+      setLoading(true);
+      // 1. Get raw cart data (contains plant_id and quantity)
+      const cartData = await cartApi.getCart();
+      const rawItems = normalizeList(cartData);
+      
+      // 2. Get full plant catalog for details
+      const plantsData = await plantApi.getPlants();
+      const allPlants = normalizeList(plantsData);
+
+      // 3. Match them up
+      const enriched = rawItems.map((item: any) => {
+        // We force both IDs to strings to ensure the match works
+        const details = allPlants.find((p: any) => 
+          String(p._id || p.id) === String(item.plant_id)
+        );
+
+        return {
+          ...item,
+          name: details?.name || "Botanical Specimen",
+          price: details?.price || 0,
+          image: details?.image || "/hero.jpg",
+          plant_id: item.plant_id // Keep this for the delete button
+        };
+      });
+
+      setItems(enriched);
       setIsLoggedOut(false);
     } catch (err: any) {
-      if (err.message.includes("401") || err.message.includes("Unauthorized")) {
-        setIsLoggedOut(true);
-      }
+      if (err.message.includes("401")) setIsLoggedOut(true);
     } finally {
       setLoading(false);
     }
@@ -60,127 +51,92 @@ export default function CartPage() {
     loadCart();
   }, []);
 
-  const removeItem = async (item: CartItem) => {
-    const plantId = item.plant?.id || item.plant?._id || item.id || item._id || item.plant_id || "";
-    await cartApi.removeFromCart({ plant_id: plantId });
-    await loadCart();
-  };
+  const handleRemove = async (pid: string) => {
+      if (!pid) return;
+      
+      try {
+        // Show a temporary "Removing..." state if you like
+        await cartApi.removeFromCart(pid);
+        
+        // Critical: Re-fetch the cart data so the UI updates
+        await loadCart(); 
+      } catch (err: any) {
+        console.error("Remove failed:", err);
+        alert("Could not remove item: " + err.message);
+      }
+    };
 
-  const total = items.reduce((sum, item) => {
-    const plant = item.plant || item;
-    const price = Number(plant.price || 0);
-    const qty = Number(item.quantity || 1);
-    return sum + price * qty;
-  }, 0);
+  const subtotal = items.reduce((sum, item) => sum + (Number(item.price) * item.quantity), 0);
+
+  // --- UI RENDER ---
+  if (loading) return <div style={statusStyle}>Consulting the garden records...</div>;
 
   return (
-    <main style={{ backgroundColor: COLORS.bg, minHeight: "100vh" }}>
+    <main style={{ backgroundColor: "#fdfaf5", minHeight: "100vh" }}>
+      <Navbar />
+      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "160px 24px" }}>
+        <h1 style={{ fontSize: "3rem", fontFamily: "serif", marginBottom: "40px" }}>The Basket</h1>
 
-      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "160px 24px 100px" }}>
-        {/* Editorial Header */}
-        <header style={{ borderBottom: `1px solid ${COLORS.border}`, paddingBottom: "30px", marginBottom: "50px" }}>
-          <span style={{ fontSize: "12px", fontWeight: "700", letterSpacing: "3px", textTransform: "uppercase", color: COLORS.brandGreen }}>
-            Your Selection
-          </span>
-          <h1 style={{ fontSize: "3.5rem", color: COLORS.textMain, marginTop: "10px", fontWeight: "600" }}>
-            The Basket
-          </h1>
-        </header>
-
-        {loading ? (
-          <div style={{ padding: "100px 0", textAlign: "center", color: COLORS.textDim, fontSize: "18px", fontStyle: "italic" }}>
-            Curating your collection...
-          </div>
-        ) : isLoggedOut ? (
-          /* RICH LOGGED OUT STATE */
-          <div style={{ textAlign: "center", padding: "80px 40px", backgroundColor: COLORS.card, borderRadius: "40px", border: `1px solid ${COLORS.border}50` }}>
-            <h2 style={{ fontSize: "24px", color: COLORS.textMain, marginBottom: "15px" }}>Private Collection</h2>
-            <p style={{ color: COLORS.textDim, marginBottom: "30px", maxWidth: "400px", margin: "0 auto 30px" }}>
-              Please sign in to access your curated plants and saved selections.
-            </p>
-            <Link href="/login" style={{ backgroundColor: COLORS.brandGreen, color: "white", padding: "18px 45px", borderRadius: "100px", textDecoration: "none", fontWeight: "700", display: "inline-block", fontSize: "14px", letterSpacing: "1px" }}>
-              LOGIN TO ACCOUNT
-            </Link>
+        {isLoggedOut ? (
+          <div style={emptyStateStyle}>
+            <p>Please login to view your selections.</p>
+            <Link href="/login" style={btnStyle}>LOGIN</Link>
           </div>
         ) : items.length === 0 ? (
-          /* POLISHED EMPTY STATE */
-          <div style={{ textAlign: "center", padding: "100px 20px" }}>
-            <p style={{ fontSize: "20px", color: COLORS.textDim, marginBottom: "30px" }}>Your basket is waiting to be filled.</p>
-            <Link href="/shop" style={{ color: COLORS.textMain, fontWeight: "700", textDecoration: "underline", textUnderlineOffset: "8px" }}>
-              EXPLORE OUR BOTANICALS
-            </Link>
+          <div style={emptyStateStyle}>
+            <p>Your basket is currently empty.</p>
+            <Link href="/shop" style={{ textDecoration: "underline" }}>Continue Shopping</Link>
           </div>
         ) : (
-          /* CART CONTENT */
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 350px", gap: "50px", alignItems: "start" }}>
-            
-            {/* List of Items */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "30px" }}>
-              {items.map((item, index) => {
-                const plant = item.plant || item;
-                return (
-                  <div key={index} style={{ display: "flex", gap: "25px", paddingBottom: "30px", borderBottom: `1px solid ${COLORS.border}30` }}>
-                    <div style={{ width: "150px", height: "180px", borderRadius: "20px", overflow: "hidden", backgroundColor: COLORS.softBeige }}>
-                      <img src={plant.image || "/hero.jpg"} alt={plant.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 350px", gap: "40px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+              {items.map((item, i) => (
+                <div key={i} style={itemCardStyle}>
+                  <img src={item.image} style={imgStyle} alt="" />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <h3 style={{ margin: 0 }}>{item.name}</h3>
+                      <span style={{ fontWeight: "700" }}>₹{item.price}</span>
                     </div>
-                    <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                      <div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                          <h3 style={{ fontSize: "22px", color: COLORS.textMain, margin: 0 }}>{plant.name}</h3>
-                          <span style={{ fontSize: "18px", fontWeight: "600", color: COLORS.textMain }}>₹{plant.price}</span>
-                        </div>
-                        <p style={{ color: COLORS.textDim, fontSize: "14px", marginTop: "10px" }}>Healthy sapling in eco-friendly grow bag</p>
-                      </div>
-                      
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ fontSize: "14px", color: COLORS.textMain, fontWeight: "600" }}>
-                          QUANTITY: {item.quantity || 1}
-                        </div>
-                        <button 
-                          onClick={() => removeItem(item)}
-                          style={{ background: "none", border: "none", color: COLORS.error, fontWeight: "700", cursor: "pointer", fontSize: "12px", letterSpacing: "1px", textDecoration: "underline" }}
-                        >
-                          REMOVE
-                        </button>
-                      </div>
-                    </div>
+                    <p style={{ color: "#8e8175", fontSize: "14px" }}>Quantity: {item.quantity}</p>
+                    <button 
+                      onClick={() => handleRemove(item.plant_id)}
+                      style={removeBtnStyle}
+                    >
+                      REMOVE
+                    </button>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
 
-            {/* Sticky Summary Side Bar */}
-            <div style={{ position: "sticky", top: "140px", backgroundColor: COLORS.card, padding: "40px", borderRadius: "30px", border: `1px solid ${COLORS.border}50` }}>
-              <h3 style={{ fontSize: "20px", marginBottom: "25px", color: COLORS.textMain }}>Summary</h3>
-              
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "15px", color: COLORS.textDim }}>
-                <span>Subtotal</span>
-                <span>₹{total.toFixed(2)}</span>
+            {/* Sidebar Summary */}
+            <div style={sidebarStyle}>
+              <h3 style={{ marginTop: 0 }}>Summary</h3>
+              <div style={rowStyle}><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
+              <div style={rowStyle}><span>Delivery</span><span style={{ color: "#008a45" }}>FREE</span></div>
+              <hr style={{ border: "none", borderTop: "1px solid #ddd2bf", margin: "20px 0" }} />
+              <div style={{ ...rowStyle, fontWeight: "700", fontSize: "20px" }}>
+                <span>Total</span><span>₹{subtotal.toFixed(2)}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "30px", color: COLORS.textDim }}>
-                <span>Shipping</span>
-                <span style={{ color: COLORS.brandGreen, fontWeight: "700" }}>FREE</span>
-              </div>
-
-              <div style={{ borderTop: `1px solid ${COLORS.border}`, paddingTop: "20px", marginBottom: "35px", display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: "18px", fontWeight: "700" }}>Total</span>
-                <span style={{ fontSize: "24px", fontWeight: "700", color: COLORS.brandGreen }}>₹{total.toFixed(2)}</span>
-              </div>
-
-              <Link href="/payment" style={{ 
-                display: "block", textAlign: "center", backgroundColor: COLORS.textMain, color: "white", padding: "20px", borderRadius: "100px", textDecoration: "none", fontWeight: "700", letterSpacing: "1px", transition: "transform 0.2s"
-              }}>
-                CHECKOUT NOW
+              <Link href="/checkout" style={{ ...btnStyle, display: "block", marginTop: "20px", textAlign: "center" }}>
+                CHECKOUT
               </Link>
-              
-              <p style={{ textAlign: "center", fontSize: "12px", color: COLORS.textDim, marginTop: "20px" }}>
-                Secure SSL Encrypted Payment
-              </p>
             </div>
-
           </div>
         )}
       </div>
+      <Footer />
     </main>
   );
 }
+
+// --- Styles ---
+const itemCardStyle: React.CSSProperties = { display: "flex", gap: "20px", padding: "20px", backgroundColor: "#fff", borderRadius: "20px", border: "1px solid #ddd2bf40" };
+const imgStyle: React.CSSProperties = { width: "100px", height: "120px", borderRadius: "12px", objectFit: "cover" };
+const removeBtnStyle: React.CSSProperties = { background: "none", border: "none", color: "#a64444", fontWeight: "700", fontSize: "11px", cursor: "pointer", padding: 0, marginTop: "10px" };
+const sidebarStyle: React.CSSProperties = { backgroundColor: "#fff", padding: "30px", borderRadius: "25px", border: "1px solid #ddd2bf", height: "fit-content", position: "sticky", top: "140px" };
+const rowStyle: React.CSSProperties = { display: "flex", justifyContent: "space-between", marginBottom: "10px" };
+const btnStyle: React.CSSProperties = { backgroundColor: "#2D241E", color: "#fff", padding: "15px 30px", borderRadius: "50px", textDecoration: "none", fontWeight: "700", fontSize: "14px" };
+const emptyStateStyle: React.CSSProperties = { textAlign: "center", padding: "100px 0", color: "#8e8175" };
+const statusStyle: React.CSSProperties = { textAlign: "center", padding: "200px 0", color: "#8e8175", fontFamily: "serif" };

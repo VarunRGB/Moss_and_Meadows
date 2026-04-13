@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation"; // Added for navigation
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Features from "@/components/Features";
@@ -11,8 +11,7 @@ import Footer from "@/components/Footer";
 import { cartApi, normalizeList, plantApi } from "@/lib/api";
 
 type Plant = {
-  id?: string | number;
-  _id?: string | number;
+  _id: string; // MongoDB ID is essential for the cart
   name: string;
   price: string | number;
   image?: string;
@@ -20,7 +19,7 @@ type Plant = {
 };
 
 export default function Home() {
-  const router = useRouter(); // Initialize router
+  const router = useRouter();
   const [plants, setPlants] = useState<Plant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -29,6 +28,7 @@ export default function Home() {
     (async () => {
       try {
         const data = await plantApi.getPlants();
+        // Use normalizeList to handle the array safely
         setPlants(normalizeList(data));
       } catch (err: any) {
         setError(err.message || "Failed to load plants");
@@ -38,14 +38,15 @@ export default function Home() {
     })();
   }, []);
 
-  const handleAddToCart = async (e: React.MouseEvent, plantId: string | number) => {
-    // We stop propagation so clicking the button doesn't trigger the card navigation
-    e.stopPropagation();
+  // Updated to use the corrected cartApi.addToCart signature
+  const handleAddToCart = async (e: React.MouseEvent, plantId: string) => {
+    e.stopPropagation(); // Prevents navigating to the detail page
     try {
-      await cartApi.addToCart({ plant_id: plantId, quantity: 1 });
-      alert("Added to cart");
+      // Passes plant_id as string and quantity as 1
+      await cartApi.addToCart(plantId, 1);
+      alert("Added to cart!");
     } catch (err: any) {
-      alert(err.message || "Could not add to cart");
+      alert(err.message || "Please login to add items to cart");
     }
   };
 
@@ -83,10 +84,9 @@ export default function Home() {
             <div style={{ textAlign: 'center', padding: '60px', color: '#718096' }}>Loading plants...</div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '30px' }}>
-              {featured.map((plant, index) => (
+              {featured.map((plant) => (
                 <div 
-                  key={index}
-                  // USE ENCODED NAME AS ID (Matching Shop Logic)
+                  key={plant._id}
                   onClick={() => router.push(`/plants/${encodeURIComponent(plant.name)}`)}
                   style={{ 
                     cursor: 'pointer',
@@ -96,12 +96,12 @@ export default function Home() {
                   onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0px)'}
                 >
                   <ProductCard
-                    id={plant.name} // Passing name as the ID
+                    id={plant._id} // Pass the real MongoDB ID here
                     title={plant.name}
                     price={plant.price}
                     image={plant.image}
-                    // We wrap the add to cart call to prevent it from navigating
-                    onAddToCart={(plantId) => console.log("Button clicked", plantId)} 
+                    // Pass the event and the ID to our handler
+                    onAddToCart={(id) => handleAddToCart(window.event as any, id as string)} 
                   />
                 </div>
               ))}
@@ -118,32 +118,16 @@ export default function Home() {
             <p style={{ color: '#718096', fontSize: '18px' }}>Find the perfect green companion for every corner of your home.</p>
           </div>
 
-          {/* Categories Section */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px' }}>
-            <CategoryCard 
-              title="Indoor" 
-              image="/hero.jpg" 
-              href="/shop" // The card handles the ?category=indoor part automatically
-            />
-            <CategoryCard 
-              title="Outdoor" 
-              image="/hero.jpg" 
-              href="/shop"
-            />
-            <CategoryCard 
-              title="Bulk" 
-              image="/hero.jpg" 
-              href="/shop"
-            />
-            <CategoryCard 
-              title="Decorative" 
-              image="/hero.jpg" 
-              href="/shop"
-            />
+            <CategoryCard title="Indoor" image="/hero.jpg" href="/shop" />
+            <CategoryCard title="Outdoor" image="/hero.jpg" href="/shop" />
+            <CategoryCard title="Bulk" image="/hero.jpg" href="/shop" />
+            <CategoryCard title="Decorative" image="/hero.jpg" href="/shop" />
           </div>
         </div>
       </section>
       
+      <Footer />
     </main>
   );
 }
