@@ -54,7 +54,6 @@ export default function Home() {
 
   return (
     <main style={{ backgroundColor: '#fdfaf5', minHeight: '100vh' }}>
-      <Navbar />
       <Hero />
       <Features />
 
@@ -127,7 +126,6 @@ export default function Home() {
         </div>
       </section>
       
-      <Footer />
     </main>
   );
 }

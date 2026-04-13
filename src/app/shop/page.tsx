@@ -59,7 +59,6 @@ function ShopContent() {
 
   return (
     <div style={{ backgroundColor: COLORS.bg, minHeight: '100vh', width: '100%' }}>
-      <Navbar />
       
       {/* HEADER SECTION */}
       <section style={{ paddingTop: '160px', paddingBottom: '40px', borderBottom: `1px solid ${COLORS.border}40` }}>
@@ -179,7 +178,6 @@ function ShopContent() {
           )}
         </div>
       </section>
-      <Footer />
     </div>
   );
 }

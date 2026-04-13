@@ -109,7 +109,6 @@ export default function AdminOrdersPage() {
 
   return (
     <main style={{ backgroundColor: COLORS.bg, minHeight: "100vh" }}>
-      <Navbar />
       
       <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "160px 24px 100px" }}>
         <header style={{ borderBottom: `1px solid ${COLORS.border}`, paddingBottom: "40px", marginBottom: "60px" }}>
@@ -213,7 +212,6 @@ export default function AdminOrdersPage() {
         )}
       </div>
       
-      <Footer />
     </main>
   );
 }

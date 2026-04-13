@@ -73,7 +73,6 @@ export default function CartPage() {
 
   return (
     <main style={{ backgroundColor: "#fdfaf5", minHeight: "100vh" }}>
-      <Navbar />
       <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "160px 24px" }}>
         <h1 style={{ fontSize: "3rem", fontFamily: "serif", marginBottom: "40px" }}>The Basket</h1>
 
@@ -126,7 +125,6 @@ export default function CartPage() {
           </div>
         )}
       </div>
-      <Footer />
     </main>
   );
 }

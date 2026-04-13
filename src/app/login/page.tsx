@@ -62,8 +62,6 @@ export default function LoginPage() {
 
   return (
     <main style={{ backgroundColor: COLORS.bg, minHeight: "100vh" }}>
-      <Navbar />
-
       <div
         style={{
           display: "flex",
@@ -252,7 +250,6 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <Footer />
     </main>
   );
 }

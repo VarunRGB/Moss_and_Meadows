@@ -45,7 +45,6 @@ export default function PaymentPage() {
 
   return (
     <main className="bg-[#f5f0e8]">
-      <Navbar />
       <div className="mx-auto max-w-6xl px-4 pb-16 pt-32">
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="rounded-[2rem] border border-[#ddd2bf] bg-[#f8f3eb] p-8 shadow-sm">
@@ -102,7 +101,6 @@ export default function PaymentPage() {
           </div>
         </div>
       </div>
-      <Footer />
     </main>
   );
 }

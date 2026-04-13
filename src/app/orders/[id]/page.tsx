@@ -51,7 +51,6 @@ export default function OrderDetailPage() {
   if (loading) {
     return (
       <main style={{ backgroundColor: COLORS.bg, minHeight: "100vh" }}>
-        <Navbar />
         <div style={{ display: "flex", justifyContent: "center", paddingTop: "200px", color: COLORS.textDim }}>
           <p style={{ fontStyle: "italic" }}>Opening records...</p>
         </div>
